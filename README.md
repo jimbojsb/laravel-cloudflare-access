@@ -101,6 +101,7 @@ For local development without Cloudflare Access, create a `user.json` file in yo
 ```
 
 This only works when `APP_ENV` is not `production`. Note that groups will only be populated if `CLOUDFLARE_ACCESS_POPULATE_GROUPS` is set to `true`.
+For safety, you should add this file to your .gitinore. 
 
 ## Testing
 
