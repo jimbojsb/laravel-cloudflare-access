@@ -86,21 +86,6 @@ Route::middleware('auth')->group(function () {
 });
 ```
 
-### Using the JWT Service Directly
-
-```php
-use Jimbojsb\CloudflareAccess\CloudflareAccessJWT;
-
-$jwt = app(CloudflareAccessJWT::class);
-$jwt->decode($tokenString);
-
-if ($jwt->isValid()) {
-    $email = $jwt->email;
-    $name = $jwt->name;
-    $groups = $jwt->groups;
-}
-```
-
 ### Local Development
 
 For local development without Cloudflare Access, create a `user.json` file in your project root:
