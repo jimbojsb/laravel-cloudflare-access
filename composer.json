@@ -1,5 +1,5 @@
 {
-    "name": "jimbojsb/cloudflare-access-laravel",
+    "name": "jimbojsb/laravel-cloudflare-access",
     "description": "Laravel authentication and authorization via Cloudflare Access",
     "keywords": ["laravel", "cloudflare", "access", "authentication", "jwt"],
     "license": "MIT",
