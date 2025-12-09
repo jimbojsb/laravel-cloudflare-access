@@ -4,7 +4,7 @@ Authentication via Cloudflare Access JWT validation for Laravel.
 
 ## Requirements
 
-- PHP 8.2+
+- PHP 8.3+
 - Laravel 11.0+ or 12.0+
 
 ## Installation
