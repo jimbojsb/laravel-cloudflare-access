@@ -7,7 +7,7 @@ it('redirects authenticated users', function () {
     $user = User::create([
         'name' => 'Test User',
         'email' => 'test@example.com',
-        'roles' => [],
+        'groups' => [],
     ]);
 
     $this->actingAs($user)
@@ -28,7 +28,7 @@ it('can authenticate with local user.json in non-production', function () {
     $userJson = json_encode([
         'name' => 'Local User',
         'email' => 'local@example.com',
-        'roles' => ['admin'],
+        'groups' => ['admin'],
     ]);
 
     file_put_contents(base_path('user.json'), $userJson);
@@ -52,13 +52,14 @@ it('returns 403 when user.json is missing in non-production', function () {
         ->assertStatus(403);
 });
 
-it('creates or updates user from local user.json', function () {
+it('creates or updates user from local user.json with groups when populate_groups is true', function () {
     config(['app.env' => 'local']);
+    config(['cloudflare-access.populate_groups' => true]);
 
     $userJson = json_encode([
         'name' => 'Initial Name',
         'email' => 'user@example.com',
-        'roles' => ['viewer'],
+        'groups' => ['viewer'],
     ]);
 
     file_put_contents(base_path('user.json'), $userJson);
@@ -67,14 +68,14 @@ it('creates or updates user from local user.json', function () {
 
     $user = User::where('email', 'user@example.com')->first();
     expect($user->name)->toBe('Initial Name');
-    expect($user->roles)->toBe(['viewer']);
+    expect($user->groups)->toBe(['viewer']);
 
     Auth::logout();
 
     $userJson = json_encode([
         'name' => 'Updated Name',
         'email' => 'user@example.com',
-        'roles' => ['admin', 'editor'],
+        'groups' => ['admin', 'editor'],
     ]);
 
     file_put_contents(base_path('user.json'), $userJson);
@@ -83,9 +84,30 @@ it('creates or updates user from local user.json', function () {
 
     $user->refresh();
     expect($user->name)->toBe('Updated Name');
-    expect($user->roles)->toBe(['admin', 'editor']);
+    expect($user->groups)->toBe(['admin', 'editor']);
 
     expect(User::where('email', 'user@example.com')->count())->toBe(1);
+
+    @unlink(base_path('user.json'));
+});
+
+it('does not populate groups when populate_groups is false', function () {
+    config(['app.env' => 'local']);
+    config(['cloudflare-access.populate_groups' => false]);
+
+    $userJson = json_encode([
+        'name' => 'Test User',
+        'email' => 'nogroups@example.com',
+        'groups' => ['admin', 'editor'],
+    ]);
+
+    file_put_contents(base_path('user.json'), $userJson);
+
+    $this->get('/login');
+
+    $user = User::where('email', 'nogroups@example.com')->first();
+    expect($user->name)->toBe('Test User');
+    expect($user->groups)->toBe([]);
 
     @unlink(base_path('user.json'));
 });

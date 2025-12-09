@@ -26,7 +26,7 @@ php artisan vendor:publish --tag=cloudflare-access-migrations
 php artisan migrate
 ```
 
-The migration creates a `users` table with `id`, `name`, `email`, `roles` (json), and timestamps.
+The migration creates a `users` table with `id`, `name`, `email`, `groups` (json, defaults to empty array), and timestamps.
 
 ## Configuration
 
@@ -35,24 +35,26 @@ Add to your `.env`:
 ```env
 CLOUDFLARE_ACCESS_SUBDOMAIN=yourcompany
 CLOUDFLARE_ACCESS_AUDIENCE=your-application-audience-tag
+CLOUDFLARE_ACCESS_POPULATE_GROUPS=false
 ```
 
 - `CLOUDFLARE_ACCESS_SUBDOMAIN`: Your team domain subdomain (e.g., if your domain is `yourcompany.cloudflareaccess.com`, use `yourcompany`)
 - `CLOUDFLARE_ACCESS_AUDIENCE`: The Application Audience (AUD) Tag from Cloudflare Zero Trust dashboard
+- `CLOUDFLARE_ACCESS_POPULATE_GROUPS`: Set to `true` to sync groups from Cloudflare Access JWT to the user model (default: `false`)
 
 ### User Model
 
-Your User model needs `name`, `email`, and `roles` columns. Update `config/cloudflare-access.php` if using a different model:
+Your User model needs `name`, `email`, and `groups` columns. Update `config/cloudflare-access.php` if using a different model:
 
 ```php
 'user_model' => App\Models\User::class,
 ```
 
-Ensure your model casts roles as an array:
+Ensure your model casts groups as an array:
 
 ```php
 protected $casts = [
-    'roles' => 'array',
+    'groups' => 'array',
 ];
 ```
 
@@ -94,11 +96,11 @@ For local development without Cloudflare Access, create a `user.json` file in yo
 {
     "name": "Local Developer",
     "email": "dev@example.com",
-    "roles": ["admin"]
+    "groups": ["admin"]
 }
 ```
 
-This only works when `APP_ENV` is not `production`.
+This only works when `APP_ENV` is not `production`. Note that groups will only be populated if `CLOUDFLARE_ACCESS_POPULATE_GROUPS` is set to `true`.
 
 ## Testing
 

@@ -30,10 +30,21 @@ return [
     |--------------------------------------------------------------------------
     |
     | The Eloquent model used for users. This model should have 'name', 'email',
-    | and 'roles' columns.
+    | and 'groups' columns.
     |
     */
     'user_model' => App\Models\User::class,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Populate Groups
+    |--------------------------------------------------------------------------
+    |
+    | Whether to populate the groups column from the Cloudflare Access JWT.
+    | When false, only name and email are synced to the user model.
+    |
+    */
+    'populate_groups' => env('CLOUDFLARE_ACCESS_POPULATE_GROUPS', false),
 
     /*
     |--------------------------------------------------------------------------

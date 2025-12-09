@@ -41,7 +41,8 @@ class LoginController extends Controller
             abort(403);
         }
 
-        $user = $this->findOrCreateUser($this->jwt->email, $this->jwt->name, $this->jwt->groups);
+        $groups = config('cloudflare-access.populate_groups', false) ? $this->jwt->groups : [];
+        $user = $this->findOrCreateUser($this->jwt->email, $this->jwt->name, $groups);
 
         Auth::login($user);
 
@@ -58,10 +59,11 @@ class LoginController extends Controller
 
         $config = json_decode(file_get_contents($userJsonPath));
 
+        $groups = config('cloudflare-access.populate_groups', false) ? ($config->groups ?? []) : [];
         $user = $this->findOrCreateUser(
             $config->email,
             $config->name,
-            $config->roles ?? []
+            $groups
         );
 
         Auth::login($user);
@@ -69,13 +71,13 @@ class LoginController extends Controller
         return redirect()->intended('/');
     }
 
-    protected function findOrCreateUser(string $email, string $name, array $roles = []): mixed
+    protected function findOrCreateUser(string $email, string $name, array $groups = []): mixed
     {
         $userModel = config('cloudflare-access.user_model');
 
         $user = $userModel::firstOrNew(['email' => strtolower($email)]);
         $user->name = $name;
-        $user->roles = $roles;
+        $user->groups = $groups;
         $user->save();
 
         return $user;

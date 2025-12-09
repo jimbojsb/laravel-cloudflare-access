@@ -6,9 +6,9 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 
 class User extends Authenticatable
 {
-    protected $fillable = ['name', 'email', 'roles'];
+    protected $fillable = ['name', 'email', 'groups'];
 
     protected $casts = [
-        'roles' => 'array',
+        'groups' => 'array',
     ];
 }
