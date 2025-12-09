@@ -26,7 +26,7 @@ php artisan vendor:publish --tag=cloudflare-access-migrations
 php artisan migrate
 ```
 
-The migration creates a `users` table with `id`, `name`, `email`, `groups` (json, defaults to empty array), and timestamps.
+The migration creates a `users` table with `id`, `name`, `email`, `groups` (nullable json), and timestamps.
 
 ## Configuration
 
