@@ -1,0 +1,52 @@
+{
+    "name": "jimbojsb/cloudflare-access-laravel",
+    "description": "Laravel authentication and authorization via Cloudflare Access",
+    "keywords": ["laravel", "cloudflare", "access", "authentication", "jwt"],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Josh Butts"
+        }
+    ],
+    "require": {
+        "php": "^8.2",
+        "firebase/php-jwt": "^6.0",
+        "illuminate/contracts": "^11.0|^12.0",
+        "illuminate/http": "^11.0|^12.0",
+        "illuminate/support": "^11.0|^12.0"
+    },
+    "require-dev": {
+        "orchestra/testbench": "^9.0|^10.0",
+        "pestphp/pest": "^3.0",
+        "pestphp/pest-plugin-laravel": "^3.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Jimbojsb\\CloudflareAccess\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Jimbojsb\\CloudflareAccess\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Jimbojsb\\CloudflareAccess\\CloudflareAccessServiceProvider"
+            ]
+        }
+    },
+    "scripts": {
+        "test": "pest",
+        "test-coverage": "pest --coverage"
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
