@@ -91,7 +91,7 @@ it('creates or updates user from local user.json with groups when populate_group
     @unlink(base_path('user.json'));
 });
 
-it('does not populate groups when populate_groups is false', function () {
+it('sets groups to empty array for new user when populate_groups is false', function () {
     config(['app.env' => 'local']);
     config(['cloudflare-access.populate_groups' => false]);
 
@@ -108,6 +108,32 @@ it('does not populate groups when populate_groups is false', function () {
     $user = User::where('email', 'nogroups@example.com')->first();
     expect($user->name)->toBe('Test User');
     expect($user->groups)->toBe([]);
+
+    @unlink(base_path('user.json'));
+});
+
+it('does not overwrite existing groups when populate_groups is false', function () {
+    config(['app.env' => 'local']);
+    config(['cloudflare-access.populate_groups' => false]);
+
+    $user = User::create([
+        'name' => 'Existing User',
+        'email' => 'existing@example.com',
+        'groups' => ['admin', 'editor'],
+    ]);
+
+    $userJson = json_encode([
+        'name' => 'Existing User',
+        'email' => 'existing@example.com',
+        'groups' => ['viewer'],
+    ]);
+
+    file_put_contents(base_path('user.json'), $userJson);
+
+    $this->get('/login');
+
+    $user->refresh();
+    expect($user->groups)->toBe(['admin', 'editor']);
 
     @unlink(base_path('user.json'));
 });
