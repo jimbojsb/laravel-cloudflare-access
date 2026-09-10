@@ -2,63 +2,6 @@
 
 use Carbon\Carbon;
 use Jimbojsb\CloudflareAccess\CloudflareAccessJWT;
-use Jimbojsb\CloudflareAccess\Tests\Fixtures\User;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Http;
-
-beforeEach(function () {
-    Cache::flush();
-});
-
-it('creates a new user with groups when populate_groups is true', function () {
-    config(['cloudflare-access.populate_groups' => true]);
-
-    $jwt = new CloudflareAccessJWT('testcompany', 'test-audience');
-    $jwt->email = 'new-user@example.com';
-    $jwt->name = 'New User';
-    $jwt->groups = ['engineering', 'admin'];
-
-    $user = $jwt->resolveUser();
-
-    expect($user->email)->toBe('new-user@example.com');
-    expect($user->name)->toBe('New User');
-    expect($user->groups)->toBe(['engineering', 'admin']);
-    expect(User::where('email', 'new-user@example.com')->count())->toBe(1);
-});
-
-it('does not populate groups for a new user when populate_groups is false', function () {
-    config(['cloudflare-access.populate_groups' => false]);
-
-    $jwt = new CloudflareAccessJWT('testcompany', 'test-audience');
-    $jwt->email = 'no-groups@example.com';
-    $jwt->name = 'No Groups';
-    $jwt->groups = ['engineering'];
-
-    $user = $jwt->resolveUser();
-
-    expect($user->groups)->toBe([]);
-});
-
-it('updates an existing user and preserves groups when populate_groups is false', function () {
-    config(['cloudflare-access.populate_groups' => false]);
-
-    $existing = User::create([
-        'name' => 'Old Name',
-        'email' => 'existing@example.com',
-        'groups' => ['viewer'],
-    ]);
-
-    $jwt = new CloudflareAccessJWT('testcompany', 'test-audience');
-    $jwt->email = 'existing@example.com';
-    $jwt->name = 'New Name';
-    $jwt->groups = ['admin'];
-
-    $user = $jwt->resolveUser();
-
-    expect($user->id)->toBe($existing->id);
-    expect($user->name)->toBe('New Name');
-    expect($user->groups)->toBe(['viewer']);
-});
 
 it('can be instantiated with configuration', function () {
     $jwt = new CloudflareAccessJWT('testcompany', 'test-audience', 60);

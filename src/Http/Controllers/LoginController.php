@@ -3,6 +3,7 @@
 namespace Jimbojsb\CloudflareAccess\Http\Controllers;
 
 use Jimbojsb\CloudflareAccess\CloudflareAccessJWT;
+use Jimbojsb\CloudflareAccess\CloudflareAccessUserResolver;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
@@ -11,7 +12,8 @@ use Illuminate\Support\Facades\Auth;
 class LoginController extends Controller
 {
     public function __construct(
-        protected CloudflareAccessJWT $jwt
+        protected CloudflareAccessJWT $jwt,
+        protected CloudflareAccessUserResolver $users,
     ) {}
 
     public function login(Request $request): RedirectResponse
@@ -41,7 +43,7 @@ class LoginController extends Controller
             abort(403);
         }
 
-        $user = $this->jwt->resolveUser();
+        $user = $this->users->resolve($this->jwt->email, $this->jwt->name, $this->jwt->groups);
 
         Auth::login($user);
 
@@ -58,11 +60,7 @@ class LoginController extends Controller
 
         $config = json_decode(file_get_contents($userJsonPath));
 
-        $this->jwt->email = $config->email;
-        $this->jwt->name = $config->name;
-        $this->jwt->groups = $config->groups ?? [];
-
-        $user = $this->jwt->resolveUser();
+        $user = $this->users->resolve($config->email, $config->name, $config->groups ?? []);
 
         Auth::login($user);
 
