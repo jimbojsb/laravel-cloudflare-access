@@ -16,11 +16,21 @@ class AuthenticateCloudflareAccess
 
     public function handle(Request $request, Closure $next): Response
     {
-        if (! $request->hasHeader('Cf-Access-Jwt-Assertion')) {
-            abort(401);
+        $assertion = $request->header('Cf-Access-Jwt-Assertion');
+
+        // Cloudflare Access always delivers a real assertion under
+        // Cf-Access-Jwt-Assertion. There is no edge available in local
+        // development to re-mint one, so a calling app forwarding a token
+        // under Cf-Access-Token (the header used to *present* a token to
+        // Access for re-minting) is accepted directly instead, but only
+        // when we're already trusting unverified tokens.
+        if (! $assertion && $this->jwt->trustsUnverifiedTokens()) {
+            $assertion = $request->header('Cf-Access-Token');
         }
 
-        $assertion = $request->header('Cf-Access-Jwt-Assertion');
+        if (! $assertion) {
+            abort(401);
+        }
 
         try {
             $this->jwt->decode($assertion);

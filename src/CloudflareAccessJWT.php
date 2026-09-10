@@ -7,6 +7,7 @@ use Firebase\JWT\JWK;
 use Firebase\JWT\JWT;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use UnexpectedValueException;
 
 class CloudflareAccessJWT
 {
@@ -32,19 +33,21 @@ class CloudflareAccessJWT
 
     protected int $cacheMinutes;
 
-    public function __construct(string $subdomain, string $expectedAudience, int $cacheMinutes = 60)
+    protected bool $trustUnverifiedJwt;
+
+    public function __construct(string $subdomain, string $expectedAudience, int $cacheMinutes = 60, bool $trustUnverifiedJwt = false)
     {
         $this->subdomain = $subdomain;
         $this->expectedAudience = $expectedAudience;
         $this->cacheMinutes = $cacheMinutes;
+        $this->trustUnverifiedJwt = $trustUnverifiedJwt;
     }
 
     public function decode(string $headerString): self
     {
-        $jwkData = $this->getJwkData();
-
-        $jwk = JWK::parseKeySet($jwkData);
-        $decodedJwt = JWT::decode($headerString, $jwk);
+        $decodedJwt = $this->trustsUnverifiedTokens()
+            ? $this->decodeWithoutVerification($headerString)
+            : $this->decodeAndVerify($headerString);
 
         $this->notBefore = isset($decodedJwt->nbf) ? Carbon::createFromTimestamp($decodedJwt->nbf) : null;
         $this->issuedAt = isset($decodedJwt->iat) ? Carbon::createFromTimestamp($decodedJwt->iat) : null;
@@ -56,6 +59,49 @@ class CloudflareAccessJWT
         $this->issuer = $decodedJwt->iss ?? null;
 
         return $this;
+    }
+
+    /**
+     * Whether this instance is configured to trust JWT claims without verifying
+     * the signature. Only ever true outside of production, regardless of
+     * configuration, since there is no legitimate reason to skip verification
+     * once real Cloudflare Access traffic is involved.
+     */
+    public function trustsUnverifiedTokens(): bool
+    {
+        return $this->trustUnverifiedJwt && config('app.env') !== 'production';
+    }
+
+    protected function decodeAndVerify(string $headerString): object
+    {
+        $jwkData = $this->getJwkData();
+
+        $jwk = JWK::parseKeySet($jwkData);
+
+        return JWT::decode($headerString, $jwk);
+    }
+
+    /**
+     * Decode a JWT's payload without verifying its signature. Only used in
+     * local development (see trustsUnverifiedTokens()), where there is no
+     * Cloudflare Access edge available to have signed the token in the first
+     * place.
+     */
+    protected function decodeWithoutVerification(string $headerString): object
+    {
+        $parts = explode('.', $headerString);
+
+        if (count($parts) !== 3) {
+            throw new UnexpectedValueException('Malformed JWT.');
+        }
+
+        $payload = json_decode(base64_decode(strtr($parts[1], '-_', '+/')));
+
+        if (! is_object($payload)) {
+            throw new UnexpectedValueException('Malformed JWT payload.');
+        }
+
+        return $payload;
     }
 
     public function isValid(): bool

@@ -15,7 +15,8 @@ class CloudflareAccessServiceProvider extends ServiceProvider
             return new CloudflareAccessJWT(
                 $app['config']->get('cloudflare-access.subdomain'),
                 $app['config']->get('cloudflare-access.audience'),
-                $app['config']->get('cloudflare-access.jwk_cache_minutes', 60)
+                $app['config']->get('cloudflare-access.jwk_cache_minutes', 60),
+                $app['config']->get('cloudflare-access.trust_unverified_jwt', false)
             );
         });
     }
