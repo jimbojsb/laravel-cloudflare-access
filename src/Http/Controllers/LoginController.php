@@ -60,11 +60,7 @@ class LoginController extends Controller
         $config = json_decode(file_get_contents($userJsonPath));
 
         $groups = config('cloudflare-access.populate_groups', false) ? ($config->groups ?? []) : null;
-        $user = $this->findOrCreateUser(
-            $config->email,
-            $config->name,
-            $groups
-        );
+        $user = $this->findOrCreateUser($config->email, $config->name, $groups);
 
         Auth::login($user);
 

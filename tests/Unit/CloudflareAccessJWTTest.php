@@ -2,12 +2,6 @@
 
 use Carbon\Carbon;
 use Jimbojsb\CloudflareAccess\CloudflareAccessJWT;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Http;
-
-beforeEach(function () {
-    Cache::flush();
-});
 
 it('can be instantiated with configuration', function () {
     $jwt = new CloudflareAccessJWT('testcompany', 'test-audience', 60);

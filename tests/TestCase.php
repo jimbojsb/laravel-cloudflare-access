@@ -43,5 +43,11 @@ abstract class TestCase extends Orchestra
     protected function defineRoutes($router): void
     {
         $router->get('/login', [\Jimbojsb\CloudflareAccess\Http\Controllers\LoginController::class, 'login']);
+
+        $router->get('/api/me', function (\Illuminate\Http\Request $request) {
+            return response()->json([
+                'email' => $request->user()?->email,
+            ]);
+        })->middleware(\Jimbojsb\CloudflareAccess\Http\Middleware\AuthenticateCloudflareAccess::class);
     }
 }
