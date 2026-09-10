@@ -1,6 +1,7 @@
 <?php
 
 use Carbon\Carbon;
+use Firebase\JWT\JWT;
 use Jimbojsb\CloudflareAccess\CloudflareAccessJWT;
 
 it('can be instantiated with configuration', function () {
@@ -106,3 +107,59 @@ it('rejects tokens without email', function () {
 
     expect($jwt->isValid())->toBeFalse();
 });
+
+it('trusts unverified tokens outside of production when configured to', function () {
+    config(['app.env' => 'local']);
+
+    $jwt = new CloudflareAccessJWT('testcompany', 'test-audience', 60, true);
+
+    expect($jwt->trustsUnverifiedTokens())->toBeTrue();
+});
+
+it('never trusts unverified tokens in production even when configured to', function () {
+    config(['app.env' => 'production']);
+
+    $jwt = new CloudflareAccessJWT('testcompany', 'test-audience', 60, true);
+
+    expect($jwt->trustsUnverifiedTokens())->toBeFalse();
+});
+
+it('does not trust unverified tokens when not configured to, even outside production', function () {
+    config(['app.env' => 'local']);
+
+    $jwt = new CloudflareAccessJWT('testcompany', 'test-audience', 60, false);
+
+    expect($jwt->trustsUnverifiedTokens())->toBeFalse();
+});
+
+it('decodes a token payload without verifying its signature when trusting unverified tokens', function () {
+    config(['app.env' => 'local']);
+
+    $payload = [
+        'aud' => ['test-audience'],
+        'email' => 'trusted@example.com',
+        'iat' => time() - 60,
+        'nbf' => time() - 60,
+        'exp' => time() + 600,
+        'custom' => ['name' => 'Trusted User', 'groups' => ['engineering']],
+    ];
+
+    // Signed with a throwaway key — decodeWithoutVerification never checks it.
+    $token = JWT::encode($payload, 'an-irrelevant-secret-that-is-long-enough-for-hs256', 'HS256');
+
+    $jwt = new CloudflareAccessJWT('testcompany', 'test-audience', 60, true);
+    $jwt->decode($token);
+
+    expect($jwt->email)->toBe('trusted@example.com');
+    expect($jwt->name)->toBe('Trusted User');
+    expect($jwt->groups)->toBe(['engineering']);
+    expect($jwt->isValid())->toBeTrue();
+});
+
+it('rejects a malformed token even when trusting unverified tokens', function () {
+    config(['app.env' => 'local']);
+
+    $jwt = new CloudflareAccessJWT('testcompany', 'test-audience', 60, true);
+
+    $jwt->decode('not-a-real-jwt');
+})->throws(UnexpectedValueException::class);

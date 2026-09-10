@@ -130,3 +130,58 @@ it('returns 401 for a malformed token', function () {
         ->get('/api/me')
         ->assertStatus(401);
 });
+
+it('trusts an unsigned token via Cf-Access-Jwt-Assertion when trust_unverified_jwt is enabled', function () {
+    config(['app.env' => 'local']);
+    config(['cloudflare-access.trust_unverified_jwt' => true]);
+
+    [$privateKey] = cloudflareAccessKeyPair();
+    $assertion = makeCloudflareAssertion($privateKey, 'unused-kid');
+
+    $response = $this->withHeader('Cf-Access-Jwt-Assertion', $assertion)
+        ->get('/api/me');
+
+    $response->assertOk();
+    $response->assertJson(['email' => 'jwtuser@example.com']);
+});
+
+it('accepts a forwarded token via Cf-Access-Token when the primary header is absent and trust_unverified_jwt is enabled', function () {
+    config(['app.env' => 'local']);
+    config(['cloudflare-access.trust_unverified_jwt' => true]);
+
+    [$privateKey] = cloudflareAccessKeyPair();
+    $assertion = makeCloudflareAssertion($privateKey, 'unused-kid');
+
+    $response = $this->withHeader('Cf-Access-Token', $assertion)
+        ->get('/api/me');
+
+    $response->assertOk();
+    $response->assertJson(['email' => 'jwtuser@example.com']);
+});
+
+it('ignores Cf-Access-Token when trust_unverified_jwt is disabled', function () {
+    config(['cloudflare-access.trust_unverified_jwt' => false]);
+
+    [$privateKey] = cloudflareAccessKeyPair();
+    $assertion = makeCloudflareAssertion($privateKey, 'unused-kid');
+
+    $this->withHeader('Cf-Access-Token', $assertion)
+        ->get('/api/me')
+        ->assertStatus(401);
+});
+
+it('still enforces real signature verification in production even if trust_unverified_jwt is enabled', function () {
+    config(['app.env' => 'production']);
+    config(['cloudflare-access.trust_unverified_jwt' => true]);
+
+    [$privateKey] = cloudflareAccessKeyPair();
+    [, $otherRsaDetails] = cloudflareAccessKeyPair();
+    $kid = 'test-key-id';
+    fakeCloudflareJwks($otherRsaDetails, $kid);
+
+    $assertion = makeCloudflareAssertion($privateKey, $kid);
+
+    $this->withHeader('Cf-Access-Jwt-Assertion', $assertion)
+        ->get('/api/me')
+        ->assertStatus(401);
+});

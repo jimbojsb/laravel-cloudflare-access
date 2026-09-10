@@ -116,8 +116,29 @@ The middleware:
 - Resolves (creating or updating, same as the login flow) the user via the
   configured `user_model`, and authenticates the request as that user without
   starting a session.
-- Does not support the `user.json` local-development fallback — it is
-  production-only behavior with no local shortcuts.
+- Does not support the `user.json` local-development fallback that the login
+  flow has — see "Local Development for the Middleware" below for its own,
+  separate local-development story.
+
+### Local Development for the Middleware
+
+If you're calling this middleware-protected route from another app running
+locally, there's no Cloudflare Access edge in front of either app to sign a
+real assertion or re-mint a forwarded one. Set `trust_unverified_jwt` (env:
+`CLOUDFLARE_ACCESS_TRUST_UNVERIFIED_JWT`) to opt into a mode where the
+middleware trusts a JWT's claims without verifying its signature — it
+defaults to `true` automatically when `APP_ENV=local` (not for `testing` or
+`staging`, which should still exercise real verification), and is always
+ignored (verification is always enforced) when `APP_ENV=production`,
+regardless of this setting.
+
+While in this mode, the middleware also accepts the token from a
+`Cf-Access-Token` header when `Cf-Access-Jwt-Assertion` isn't present — this
+is the header name a calling app would use to forward a token it received,
+which normally only has meaning when a real Cloudflare Access edge re-mints
+it into a `Cf-Access-Jwt-Assertion` before it reaches you. Locally, with no
+edge to do that re-minting, the middleware accepts the forwarded header
+directly instead.
 
 ### Local Development
 

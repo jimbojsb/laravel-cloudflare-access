@@ -66,4 +66,22 @@ return [
     |
     */
     'allow_local_user' => env('CLOUDFLARE_ACCESS_ALLOW_LOCAL_USER', true),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Trust Unverified JWTs
+    |--------------------------------------------------------------------------
+    |
+    | When true, AuthenticateCloudflareAccess trusts a JWT's claims without
+    | verifying its signature against Cloudflare's JWKS, and will also accept
+    | the token from a Cf-Access-Token header (used by a calling app forwarding
+    | a token) when Cf-Access-Jwt-Assertion isn't present. This is only useful
+    | in local development, where there is no Cloudflare Access edge available
+    | to sign a real assertion or re-mint a forwarded one. Defaults to true
+    | only when APP_ENV is "local" — NOT for "testing"/"staging", which should
+    | still exercise real verification. This setting is always ignored —
+    | verification is always enforced — when APP_ENV is "production".
+    |
+    */
+    'trust_unverified_jwt' => env('CLOUDFLARE_ACCESS_TRUST_UNVERIFIED_JWT', env('APP_ENV', 'production') === 'local'),
 ];
