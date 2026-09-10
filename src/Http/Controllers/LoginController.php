@@ -3,7 +3,6 @@
 namespace Jimbojsb\CloudflareAccess\Http\Controllers;
 
 use Jimbojsb\CloudflareAccess\CloudflareAccessJWT;
-use Jimbojsb\CloudflareAccess\CloudflareAccessUserResolver;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
@@ -12,8 +11,7 @@ use Illuminate\Support\Facades\Auth;
 class LoginController extends Controller
 {
     public function __construct(
-        protected CloudflareAccessJWT $jwt,
-        protected CloudflareAccessUserResolver $users,
+        protected CloudflareAccessJWT $jwt
     ) {}
 
     public function login(Request $request): RedirectResponse
@@ -43,7 +41,8 @@ class LoginController extends Controller
             abort(403);
         }
 
-        $user = $this->users->resolve($this->jwt->email, $this->jwt->name, $this->jwt->groups);
+        $groups = config('cloudflare-access.populate_groups', false) ? $this->jwt->groups : null;
+        $user = $this->findOrCreateUser($this->jwt->email, $this->jwt->name, $groups);
 
         Auth::login($user);
 
@@ -60,11 +59,30 @@ class LoginController extends Controller
 
         $config = json_decode(file_get_contents($userJsonPath));
 
-        $user = $this->users->resolve($config->email, $config->name, $config->groups ?? []);
+        $groups = config('cloudflare-access.populate_groups', false) ? ($config->groups ?? []) : null;
+        $user = $this->findOrCreateUser($config->email, $config->name, $groups);
 
         Auth::login($user);
 
         return redirect()->intended('/');
+    }
+
+    protected function findOrCreateUser(string $email, string $name, ?array $groups = null): mixed
+    {
+        $userModel = config('cloudflare-access.user_model');
+
+        $user = $userModel::firstOrNew(['email' => strtolower($email)]);
+        $user->name = $name;
+
+        if ($groups !== null) {
+            $user->groups = $groups;
+        } elseif ($user->groups === null) {
+            $user->groups = [];
+        }
+
+        $user->save();
+
+        return $user;
     }
 
     protected function canUseLocalUser(): bool

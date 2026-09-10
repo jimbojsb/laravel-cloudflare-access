@@ -18,13 +18,6 @@ class CloudflareAccessServiceProvider extends ServiceProvider
                 $app['config']->get('cloudflare-access.jwk_cache_minutes', 60)
             );
         });
-
-        $this->app->singleton(CloudflareAccessUserResolver::class, function (Application $app) {
-            return new CloudflareAccessUserResolver(
-                $app['config']->get('cloudflare-access.user_model'),
-                $app['config']->get('cloudflare-access.populate_groups', false)
-            );
-        });
     }
 
     public function boot(): void
