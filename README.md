@@ -88,6 +88,37 @@ Route::middleware('auth')->group(function () {
 });
 ```
 
+## Stateless / API Middleware Usage
+
+The `LoginController` + session flow described above is the primary, recommended
+way to authenticate a browser-based app and should be used for that purpose.
+For API-style or machine-to-machine routes that can't hold a browser session
+(for example, an MCP server route in a consuming app), this package also
+ships an additional, opt-in `AuthenticateCloudflareAccess` middleware.
+
+Unlike the login flow, this middleware authenticates the current request only
+(via `Auth::setUser()`) and never writes anything to session storage. Apply
+it explicitly to the routes that need it:
+
+```php
+use Jimbojsb\CloudflareAccess\Http\Middleware\AuthenticateCloudflareAccess;
+
+Route::middleware(AuthenticateCloudflareAccess::class)->group(function () {
+    Route::get('/api/mcp', [McpController::class, 'handle']);
+});
+```
+
+The middleware:
+
+- Reads the `Cf-Access-Jwt-Assertion` header and aborts with `401` if it's missing.
+- Decodes and validates the JWT, aborting with `401` for malformed, invalid,
+  expired, or wrong-audience tokens.
+- Resolves (creating or updating, same as the login flow) the user via the
+  configured `user_model`, and authenticates the request as that user without
+  starting a session.
+- Does not support the `user.json` local-development fallback — it is
+  production-only behavior with no local shortcuts.
+
 ### Local Development
 
 For local development without Cloudflare Access, create a `user.json` file in your project root:

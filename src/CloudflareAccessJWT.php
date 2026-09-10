@@ -138,4 +138,24 @@ class CloudflareAccessJWT
     {
         return $this->expectedAudience;
     }
+
+    public function resolveUser(): mixed
+    {
+        $userModel = config('cloudflare-access.user_model');
+
+        $groups = config('cloudflare-access.populate_groups', false) ? $this->groups : null;
+
+        $user = $userModel::firstOrNew(['email' => strtolower($this->email)]);
+        $user->name = $this->name;
+
+        if ($groups !== null) {
+            $user->groups = $groups;
+        } elseif ($user->groups === null) {
+            $user->groups = [];
+        }
+
+        $user->save();
+
+        return $user;
+    }
 }

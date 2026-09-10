@@ -41,8 +41,7 @@ class LoginController extends Controller
             abort(403);
         }
 
-        $groups = config('cloudflare-access.populate_groups', false) ? $this->jwt->groups : null;
-        $user = $this->findOrCreateUser($this->jwt->email, $this->jwt->name, $groups);
+        $user = $this->jwt->resolveUser();
 
         Auth::login($user);
 
@@ -59,34 +58,15 @@ class LoginController extends Controller
 
         $config = json_decode(file_get_contents($userJsonPath));
 
-        $groups = config('cloudflare-access.populate_groups', false) ? ($config->groups ?? []) : null;
-        $user = $this->findOrCreateUser(
-            $config->email,
-            $config->name,
-            $groups
-        );
+        $this->jwt->email = $config->email;
+        $this->jwt->name = $config->name;
+        $this->jwt->groups = $config->groups ?? [];
+
+        $user = $this->jwt->resolveUser();
 
         Auth::login($user);
 
         return redirect()->intended('/');
-    }
-
-    protected function findOrCreateUser(string $email, string $name, ?array $groups = null): mixed
-    {
-        $userModel = config('cloudflare-access.user_model');
-
-        $user = $userModel::firstOrNew(['email' => strtolower($email)]);
-        $user->name = $name;
-
-        if ($groups !== null) {
-            $user->groups = $groups;
-        } elseif ($user->groups === null) {
-            $user->groups = [];
-        }
-
-        $user->save();
-
-        return $user;
     }
 
     protected function canUseLocalUser(): bool
