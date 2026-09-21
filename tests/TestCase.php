@@ -49,5 +49,12 @@ abstract class TestCase extends Orchestra
                 'email' => $request->user()?->email,
             ]);
         })->middleware(\Jimbojsb\CloudflareAccess\Http\Middleware\AuthenticateCloudflareAccess::class);
+
+        $router->get('/api/service', function (\Illuminate\Http\Request $request) {
+            return response()->json([
+                'common_name' => $request->attributes->get('cloudflare_access_service_jwt')?->commonName,
+                'user_email' => $request->user()?->email,
+            ]);
+        })->middleware(\Jimbojsb\CloudflareAccess\Http\Middleware\AuthenticateCloudflareAccessService::class);
     }
 }

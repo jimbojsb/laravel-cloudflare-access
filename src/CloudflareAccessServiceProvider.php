@@ -4,6 +4,7 @@ namespace Jimbojsb\CloudflareAccess;
 
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\ServiceProvider;
+use Jimbojsb\CloudflareAccess\Contracts\ServiceUserIdentityResolver;
 
 class CloudflareAccessServiceProvider extends ServiceProvider
 {
@@ -19,6 +20,17 @@ class CloudflareAccessServiceProvider extends ServiceProvider
                 $app['config']->get('cloudflare-access.trust_unverified_jwt', false)
             );
         });
+
+        $this->app->singleton(CloudflareAccessServiceJWT::class, function (Application $app) {
+            return new CloudflareAccessServiceJWT(
+                $app['config']->get('cloudflare-access.subdomain'),
+                $app['config']->get('cloudflare-access.audience'),
+                $app['config']->get('cloudflare-access.jwk_cache_minutes', 60),
+                $app['config']->get('cloudflare-access.trust_unverified_jwt', false)
+            );
+        });
+
+        $this->app->bind(ServiceUserIdentityResolver::class, DefaultServiceUserIdentityResolver::class);
     }
 
     public function boot(): void
