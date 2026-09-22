@@ -90,28 +90,13 @@ return [
     | Service Auth (Service Token) Configuration
     |--------------------------------------------------------------------------
     |
-    | Configuration for AuthenticateCloudflareAccessService, the opt-in
-    | middleware for Cloudflare Access service tokens (e.g. for webhook
-    | receivers or other machine-to-machine callers). Service token JWTs
-    | carry a "common_name" claim instead of "email"/"name"/"groups".
+    | Configuration for AuthenticateCloudflareAccessService. See the README
+    | for details.
     |
     */
     'service_auth' => [
-        // When false (default), the middleware only validates the JWT and
-        // exposes it on the request (via the `cloudflare_access_service_jwt`
-        // request attribute). When true, it also resolves/creates a system
-        // user and calls Auth::setUser(), so normal Laravel authorization
-        // (gates, policies, roles/permissions packages) works against it.
         'resolve_user' => env('CLOUDFLARE_ACCESS_SERVICE_RESOLVE_USER', false),
-
-        // The model used for resolved service users, only relevant when
-        // resolve_user is true. Defaults to the same user_model as human
-        // auth above (shared table); set this to a dedicated model to keep
-        // service identities in their own table instead.
         'user_model' => env('CLOUDFLARE_ACCESS_SERVICE_USER_MODEL'),
-
-        // Static groups/roles tag applied to resolved service users, for
-        // apps that gate authorization on the groups column.
         'groups' => ['service'],
     ],
 ];

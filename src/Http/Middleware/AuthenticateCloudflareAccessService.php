@@ -18,21 +18,11 @@ class AuthenticateCloudflareAccessService
         protected CloudflareAccessServiceJWT $jwt
     ) {}
 
-    /**
-     * Derive the resolved service user's email from the JWT's common_name
-     * using the given callback, instead of the default
-     * "{common_name}@{subdomain}.cloudflareaccess.com" scheme.
-     */
     public static function resolveEmailUsing(Closure $callback): void
     {
         static::$emailResolver = $callback;
     }
 
-    /**
-     * Derive the resolved service user's name from the JWT's common_name
-     * using the given callback, instead of defaulting to the common_name
-     * itself.
-     */
     public static function resolveNameUsing(Closure $callback): void
     {
         static::$nameResolver = $callback;

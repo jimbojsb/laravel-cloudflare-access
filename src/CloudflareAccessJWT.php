@@ -56,11 +56,6 @@ class CloudflareAccessJWT
         return $this;
     }
 
-    /**
-     * Decode the JWT (verifying its signature, unless trustsUnverifiedTokens()
-     * is true) and return the raw decoded payload, without populating any
-     * instance fields. Shared by subclasses whose payload shape differs.
-     */
     protected function decodeToken(string $headerString): object
     {
         return $this->trustsUnverifiedTokens()
