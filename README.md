@@ -194,15 +194,22 @@ every resolved service user, so you can gate on it:
 Gate::define('act-as-service', fn ($user) => in_array('service', $user->groups ?? []));
 ```
 
-The user's `email` and `name` are derived from the JWT's `common_name` via
-`Jimbojsb\CloudflareAccess\Contracts\ServiceUserIdentityResolver`, bound by
-default to `DefaultServiceUserIdentityResolver` (email:
-`{common_name}@{subdomain}.cloudflareaccess.com`, name: the `common_name`
-itself). Override this in your own app's service provider if you need a
-different scheme:
+The user's `email` and `name` are derived from the JWT's `common_name` by
+default as `{common_name}@{subdomain}.cloudflareaccess.com` and the
+`common_name` itself, respectively. Override either with
+`resolveEmailUsing()` / `resolveNameUsing()` — e.g. in your
+`AppServiceProvider`'s `boot()` method:
 
 ```php
-$this->app->bind(ServiceUserIdentityResolver::class, MyServiceUserIdentityResolver::class);
+use Jimbojsb\CloudflareAccess\Http\Middleware\AuthenticateCloudflareAccessService;
+
+AuthenticateCloudflareAccessService::resolveEmailUsing(
+    fn (string $commonName) => "{$commonName}@my-app.internal"
+);
+
+AuthenticateCloudflareAccessService::resolveNameUsing(
+    fn (string $commonName) => "Service: {$commonName}"
+);
 ```
 
 ### Local Development

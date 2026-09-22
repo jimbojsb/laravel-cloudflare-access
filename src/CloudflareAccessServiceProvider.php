@@ -4,7 +4,6 @@ namespace Jimbojsb\CloudflareAccess;
 
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\ServiceProvider;
-use Jimbojsb\CloudflareAccess\Contracts\ServiceUserIdentityResolver;
 
 class CloudflareAccessServiceProvider extends ServiceProvider
 {
@@ -29,8 +28,6 @@ class CloudflareAccessServiceProvider extends ServiceProvider
                 $app['config']->get('cloudflare-access.trust_unverified_jwt', false)
             );
         });
-
-        $this->app->bind(ServiceUserIdentityResolver::class, DefaultServiceUserIdentityResolver::class);
     }
 
     public function boot(): void

@@ -1,7 +1,15 @@
 <?php
 
 use Firebase\JWT\JWT;
+use Jimbojsb\CloudflareAccess\Http\Middleware\AuthenticateCloudflareAccessService;
 use Jimbojsb\CloudflareAccess\Tests\Fixtures\User;
+
+afterEach(function () {
+    AuthenticateCloudflareAccessService::resolveEmailUsing(fn (string $commonName) => sprintf(
+        '%s@%s.cloudflareaccess.com', $commonName, config('cloudflare-access.subdomain')
+    ));
+    AuthenticateCloudflareAccessService::resolveNameUsing(fn (string $commonName) => $commonName);
+});
 
 function makeCloudflareServiceAssertion(string $privateKey, string $kid, array $overrides = []): string
 {
@@ -57,6 +65,28 @@ it('resolves and authenticates a system user when resolve_user is enabled', func
     expect($user)->not->toBeNull();
     expect($user->name)->toBe('my-service.access');
     expect($user->groups)->toBe(['service']);
+});
+
+it('uses overridden email/name resolver closures when set', function () {
+    config(['cloudflare-access.service_auth.resolve_user' => true]);
+
+    AuthenticateCloudflareAccessService::resolveEmailUsing(fn (string $commonName) => "{$commonName}@my-app.internal");
+    AuthenticateCloudflareAccessService::resolveNameUsing(fn (string $commonName) => "Service: {$commonName}");
+
+    [$privateKey, $rsaDetails] = cloudflareAccessKeyPair();
+    $kid = 'test-key-id';
+    fakeCloudflareJwks($rsaDetails, $kid);
+
+    $assertion = makeCloudflareServiceAssertion($privateKey, $kid);
+
+    $this->withHeader('Cf-Access-Jwt-Assertion', $assertion)
+        ->get('/api/service')
+        ->assertOk()
+        ->assertJson(['user_email' => 'my-service.access@my-app.internal']);
+
+    $user = User::where('email', 'my-service.access@my-app.internal')->first();
+    expect($user)->not->toBeNull();
+    expect($user->name)->toBe('Service: my-service.access');
 });
 
 it('returns 401 when the header is missing', function () {
