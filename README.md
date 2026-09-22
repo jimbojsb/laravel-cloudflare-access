@@ -140,6 +140,78 @@ it into a `Cf-Access-Jwt-Assertion` before it reaches you. Locally, with no
 edge to do that re-minting, the middleware accepts the forwarded header
 directly instead.
 
+## Service Auth Middleware (Service Tokens)
+
+Cloudflare Access **service tokens** — used for service-to-service or
+machine-to-machine traffic like a webhook receiver — produce a
+differently-shaped JWT than user auth: instead of `email`/`custom.name`/
+`custom.groups`, they carry a `common_name` claim identifying the service
+token. There's no human user behind that traffic, so this package ships a
+second, opt-in `AuthenticateCloudflareAccessService` middleware for it,
+separate from `AuthenticateCloudflareAccess`:
+
+```php
+use Jimbojsb\CloudflareAccess\Http\Middleware\AuthenticateCloudflareAccessService;
+
+Route::middleware(AuthenticateCloudflareAccessService::class)->group(function () {
+    Route::post('/webhooks/incoming', [WebhookController::class, 'handle']);
+});
+```
+
+It reads/validates the JWT the same way `AuthenticateCloudflareAccess` does
+(same `Cf-Access-Jwt-Assertion` header, same `trust_unverified_jwt` /
+`Cf-Access-Token` local-development story described above), but rejects a
+normal user JWT (no `common_name`) and vice versa.
+
+By default (`cloudflare-access.service_auth.resolve_user` is `false`), the
+middleware doesn't touch Eloquent or `Auth` at all — it just validates the
+token and attaches it to the request so your controller can read the
+service's identity directly:
+
+```php
+$commonName = $request->attributes->get('cloudflare_access_service_jwt')->commonName;
+```
+
+### Integrating with Laravel Authorization
+
+If your webhook (or other service-token) traffic needs to participate in
+normal Laravel authorization — gates, policies, roles/permissions packages —
+set `service_auth.resolve_user` to `true` (env:
+`CLOUDFLARE_ACCESS_SERVICE_RESOLVE_USER`). The middleware will then
+find-or-create a system user for the service token and call `Auth::setUser()`
+with it (stateless — no session is written, same as the regular middleware),
+so `$request->user()`, gates, and policies all work against it.
+
+The model used is configurable via `service_auth.user_model` (env:
+`CLOUDFLARE_ACCESS_SERVICE_USER_MODEL`): leave it unset to reuse the same
+`user_model` as human auth (service identities share the `users` table), or
+point it at a dedicated model to keep service identities in their own table.
+
+A static `service_auth.groups` array (default `['service']`) is assigned to
+every resolved service user, so you can gate on it:
+
+```php
+Gate::define('act-as-service', fn ($user) => in_array('service', $user->groups ?? []));
+```
+
+The user's `email` and `name` are derived from the JWT's `common_name` by
+default as `{common_name}@{subdomain}.cloudflareaccess.com` and the
+`common_name` itself, respectively. Override either with
+`resolveEmailUsing()` / `resolveNameUsing()` — e.g. in your
+`AppServiceProvider`'s `boot()` method:
+
+```php
+use Jimbojsb\CloudflareAccess\Http\Middleware\AuthenticateCloudflareAccessService;
+
+AuthenticateCloudflareAccessService::resolveEmailUsing(
+    fn (string $commonName) => "{$commonName}@my-app.internal"
+);
+
+AuthenticateCloudflareAccessService::resolveNameUsing(
+    fn (string $commonName) => "Service: {$commonName}"
+);
+```
+
 ### Local Development
 
 For local development without Cloudflare Access, create a `user.json` file in your project root:

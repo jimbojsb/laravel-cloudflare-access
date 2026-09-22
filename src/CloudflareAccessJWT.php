@@ -45,20 +45,31 @@ class CloudflareAccessJWT
 
     public function decode(string $headerString): self
     {
-        $decodedJwt = $this->trustsUnverifiedTokens()
-            ? $this->decodeWithoutVerification($headerString)
-            : $this->decodeAndVerify($headerString);
+        $decodedJwt = $this->decodeToken($headerString);
 
-        $this->notBefore = isset($decodedJwt->nbf) ? Carbon::createFromTimestamp($decodedJwt->nbf) : null;
-        $this->issuedAt = isset($decodedJwt->iat) ? Carbon::createFromTimestamp($decodedJwt->iat) : null;
-        $this->expiresAt = isset($decodedJwt->exp) ? Carbon::createFromTimestamp($decodedJwt->exp) : null;
+        $this->populateCommonFields($decodedJwt);
+
         $this->email = $decodedJwt->email ?? null;
         $this->name = $decodedJwt->custom->name ?? null;
         $this->groups = $decodedJwt->custom->groups ?? [];
-        $this->audience = $decodedJwt->aud ?? null;
-        $this->issuer = $decodedJwt->iss ?? null;
 
         return $this;
+    }
+
+    protected function decodeToken(string $headerString): object
+    {
+        return $this->trustsUnverifiedTokens()
+            ? $this->decodeWithoutVerification($headerString)
+            : $this->decodeAndVerify($headerString);
+    }
+
+    protected function populateCommonFields(object $decodedJwt): void
+    {
+        $this->notBefore = isset($decodedJwt->nbf) ? Carbon::createFromTimestamp($decodedJwt->nbf) : null;
+        $this->issuedAt = isset($decodedJwt->iat) ? Carbon::createFromTimestamp($decodedJwt->iat) : null;
+        $this->expiresAt = isset($decodedJwt->exp) ? Carbon::createFromTimestamp($decodedJwt->exp) : null;
+        $this->audience = $decodedJwt->aud ?? null;
+        $this->issuer = $decodedJwt->iss ?? null;
     }
 
     /**

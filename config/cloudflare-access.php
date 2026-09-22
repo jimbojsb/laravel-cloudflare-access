@@ -84,4 +84,19 @@ return [
     |
     */
     'trust_unverified_jwt' => env('CLOUDFLARE_ACCESS_TRUST_UNVERIFIED_JWT', env('APP_ENV', 'production') === 'local'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Service Auth (Service Token) Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Configuration for AuthenticateCloudflareAccessService. See the README
+    | for details.
+    |
+    */
+    'service_auth' => [
+        'resolve_user' => env('CLOUDFLARE_ACCESS_SERVICE_RESOLVE_USER', false),
+        'user_model' => env('CLOUDFLARE_ACCESS_SERVICE_USER_MODEL'),
+        'groups' => ['service'],
+    ],
 ];
